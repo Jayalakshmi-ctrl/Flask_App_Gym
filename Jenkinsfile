@@ -4,21 +4,15 @@ pipeline {
     environment {
         REGISTRY_CREDS = 'docker-hub-credentials'
         IMAGE_NAME     = 'aceest-fitness-app'
-        DOCKER_USER    = 'your-dockerhub-username' // Make sure to change this to your real Docker Hub username
+        DOCKER_USER    = 'your-dockerhub-username' // Make sure this matches your real Docker Hub profile name
     }
 
     stages {
         stage('Execute PyTest Verification Suite') {
-            agent {
-                docker { 
-                    image 'python:3.11-slim'
-                    args '-u root'
-                }
-            }
             steps {
-                echo 'Launching Unit Test suites inside a clean Python container...'
-                sh 'pip install --no-cache-dir -r requirements.txt'
-                sh 'python -m pytest tests/'
+                echo 'Launching Unit Test suites inside an isolated runtime container...'
+                // Spins up a quick runtime container using shell script blocks
+                sh 'docker run --rm -v "$(pwd)":/app -w /app python:3.11-slim sh -c "pip install --no-cache-dir -r requirements.txt && python -m pytest tests/"'
             }
         }
 
@@ -26,9 +20,7 @@ pipeline {
             steps {
                 echo 'Assembling production container image and shipping to Docker Hub...'
                 script {
-                    // This uses your Jenkins credentials to securely log into Docker Hub
                     withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        // Build and push using the host's Docker engine
                         sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER} ."
                         sh "docker tag ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER} ${DOCKER_USER}/${IMAGE_NAME}:latest"
                         
