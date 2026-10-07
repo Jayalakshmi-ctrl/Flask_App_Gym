@@ -1,4 +1,3 @@
-cat << 'EOF' > Dockerfile
 # Multi-stage build setup to guarantee minimal delivery sizes
 FROM python:3.11-slim AS builder
 
