@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, jsonify
 
 main_bp = Blueprint('main', __name__)
 
-# Data Store migrated from the original Tkinter program dictionary for trial basis
+# Data Store migrated from the original Tkinter program dictionary for trial basis what works out
 PROGRAMS = {
     "fat_loss": {
         "name": "Fat Loss (FL)",
