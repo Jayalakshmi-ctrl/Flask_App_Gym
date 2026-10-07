@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         REGISTRY_CREDS = 'docker-hub-credentials'
-        IMAGE_NAME     = 'aceest-fitness-app'
-        DOCKER_USER    = 'chidambar123' // Change this to your real Docker Hub username
+        IMAGE_NAME     = 'aaaa'
+        DOCKER_USER    = 'aaaa' // Change this to your real Docker Hub username
     }
 
     stages {
