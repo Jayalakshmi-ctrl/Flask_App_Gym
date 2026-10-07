@@ -4,14 +4,13 @@ pipeline {
     environment {
         REGISTRY_CREDS = 'docker-hub-credentials'
         IMAGE_NAME     = 'gym_application'
-        DOCKER_USER    = 'qwerty' // Change this to your real Docker Hub username
+        DOCKER_USER    = 'chidambar123'
     }
 
     stages {
         stage('Execute PyTest Verification Suite') {
             steps {
                 echo 'Building verification image and executing PyTest matrix...'
-                // This builds your Dockerfile locally and immediately calls pytest inside it
                 sh "docker build --target builder -t fitness-test-env ."
                 sh "docker run --rm fitness-test-env python -m pytest tests/"
             }
