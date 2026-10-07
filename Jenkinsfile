@@ -4,38 +4,47 @@ pipeline {
     environment {
         REGISTRY_CREDS = 'docker-hub-credentials'
         IMAGE_NAME     = 'aceest-fitness-app'
-        DOCKER_USER    = 'your-dockerhub-username' // Remember to change this to your actual Docker Hub username
+        DOCKER_USER    = 'your-dockerhub-username' // Make sure to change this to your real Docker Hub username
     }
 
     stages {
         stage('Execute PyTest Verification Suite') {
+            agent {
+                docker { 
+                    image 'python:3.11-slim'
+                    args '-u root'
+                }
+            }
             steps {
-                echo 'Setting up Python Virtual Environment...'
-                // This builds a local, isolated virtual environment directly inside Jenkins without needing Docker
-                sh '''
-                    python3 -m venv venv || python -m venv venv
-                    . venv/bin/activate
-                    pip install --no-cache-dir -r requirements.txt
-                    export PYTHONPATH=$PYTHONPATH:.
-                    python -m pytest tests/
-                '''
+                echo 'Launching Unit Test suites inside a clean Python container...'
+                sh 'pip install --no-cache-dir -r requirements.txt'
+                sh 'python -m pytest tests/'
             }
         }
 
         stage('Secure Image Container Build & Push') {
             steps {
-                echo 'Skipping heavy docker commands inside agent...'
-                echo 'Build environment verified successfully!'
+                echo 'Assembling production container image and shipping to Docker Hub...'
+                script {
+                    withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                        sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER} ."
+                        sh "docker tag ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER} ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                        
+                        sh "echo ${PASS} | docker login -u ${USER} --password-stdin"
+                        sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                        sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                    }
+                }
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline completed successfully! Build verified."
+            echo "Pipeline completed successfully! Build #${BUILD_NUMBER} distributed."
         }
         failure {
-            echo 'Pipeline execution failure flagged.'
+            echo 'Pipeline structural processing failure flagged.'
         }
     }
 }
