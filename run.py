@@ -1,3 +1,4 @@
+# Triggering automated 1-minute build from GitHub Web interface
 from app import create_app
 
 app = create_app()
