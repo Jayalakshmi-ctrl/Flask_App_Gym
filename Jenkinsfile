@@ -4,45 +4,38 @@ pipeline {
     environment {
         REGISTRY_CREDS = 'docker-hub-credentials'
         IMAGE_NAME     = 'aceest-fitness-app'
-        DOCKER_USER    = 'your-dockerhub-username'
+        DOCKER_USER    = 'your-dockerhub-username' // Make sure to change this to your real Docker Hub username
     }
 
     stages {
-        stage('Initialize Environment') {
-            steps {
-                echo 'Validating workspace assets...'
-                sh 'python3 --version'
-                sh 'pip install -r requirements.txt'
-            }
-        }
-
         stage('Execute PyTest Verification Suite') {
-            steps {
-                echo 'Launching Unit Test suites via PyTest...'
-                sh 'pytest tests/ --junitxml=test-reports/results.xml'
-            }
-            post {
-                always {
-                    junit 'test-reports/results.xml'
+            agent {
+                docker { 
+                    image 'python:3.11-slim'
+                    args '-u root'
                 }
             }
-        }
-
-        stage('Secure Image Container Build') {
             steps {
-                echo 'Assembling isolated container environment tier...'
-                sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER} ."
-                sh "docker tag ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER} ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                echo 'Launching Unit Test suites inside a clean Python container...'
+                sh 'pip install --no-cache-dir -r requirements.txt'
+                sh 'python -m pytest tests/'
             }
         }
 
-        stage('Artifact Distribution Push') {
+        stage('Secure Image Container Build & Push') {
             steps {
-                echo 'Deploying artifact images out to Docker Registry Hub...'
-                withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh "echo ${PASS} | docker login -u ${USER} --password-stdin"
-                    sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER}"
-                    sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                echo 'Assembling production container image and shipping to Docker Hub...'
+                script {
+                    // This uses your Jenkins credentials to securely log into Docker Hub
+                    withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                        // Build and push using the host's Docker engine
+                        sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER} ."
+                        sh "docker tag ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER} ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                        
+                        sh "echo ${PASS} | docker login -u ${USER} --password-stdin"
+                        sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                        sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                    }
                 }
             }
         }
@@ -50,7 +43,7 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline complete successfully! Build #${BUILD_NUMBER} distributed."
+            echo "Pipeline completed successfully! Build #${BUILD_NUMBER} distributed."
         }
         failure {
             echo 'Pipeline structural processing failure flagged.'
