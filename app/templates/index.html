@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACEest Fitness and Gym</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://jsdelivr.net" rel="stylesheet">
+    <style>
+        body { background-color: #1a1a1a; color: white; font-family: 'Arial', sans-serif; }
+        .header-banner { background-color: #d4af37; color: black; font-weight: bold; padding: 20px 0; }
+        .panel-box { border: 2px solid #d4af37; border-radius: 8px; background-color: #1a1a1a; padding: 20px; margin-bottom: 20px; }
+        .panel-title { color: #d4af37; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #d4af37; padding-bottom: 5px; }
+        .metrics-box { background-color: #333; color: #ddd; font-family: 'Courier New', Courier, monospace; padding: 15px; border-radius: 4px; }
+        .display-card { background-color: #222; border: 1px solid #444; border-radius: 6px; padding: 15px; height: 100%; }
+    </style>
+</head>
+<body>
+
+    <div class="header-banner text-center mb-4">
+        <h1>ACEest FUNCTIONAL FITNESS</h1>
+    </div>
+
+    <div class="container-fluid px-4">
+        <div class="row">
+            <!-- Left Side: Control Panel & Metrics -->
+            <div class="col-md-3">
+                <div class="panel-box">
+                    <h5 class="panel-title">Client Profile</h5>
+                    <div class="mb-3">
+                        <label for="programSelect" class="form-label text-white">Select Program:</label>
+                        <select class="form-select bg-dark text-white border-secondary" id="programSelect">
+                            <option value="" selected disabled>Choose a profile...</option>
+                            {% for key, val in programs.items() %}
+                                <option value="{{ key }}">{{ val.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="metrics-box mt-5">
+                        <div>CAPACITY: {{ metrics.capacity }}</div>
+                        <div>AREA: {{ metrics.area }}</div>
+                        <div>BREAK-EVEN: {{ metrics.break_even }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Program Output Dashboards -->
+            <div class="col-md-9">
+                <div class="row h-100">
+                    <div class="col-12 mb-3">
+                        <div class="panel-box h-100">
+                            <h5 class="panel-title">Weekly Workout Chart</h5>
+                            <div class="display-card" id="workoutDisplay">
+                                <span class="text-muted">Select a profile to view workout</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="panel-box h-100">
+                            <h5 class="panel-title">Daily Nutrition Plan (Tamil Nadu Context)</h5>
+                            <div class="display-card" id="dietDisplay">
+                                <span class="text-muted">Select a profile to view diet</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & Async Data Handlers -->
+    <script src="https://jsdelivr.net"></script>
+    <script>
+        document.getElementById('programSelect').addEventListener('change', function() {
+            const programKey = this.value;
+            fetch(`/api/program/${programKey}`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.error) return;
+                    
+                    // Update Workout Display
+                    const workDiv = document.getElementById('workoutDisplay');
+                    workDiv.style.color = data.color;
+                    workDiv.innerHTML = data.workout.map(line => `<div>${line}</div>`).join('');
+
+                    // Update Diet Display
+                    const dietDiv = document.getElementById('dietDisplay');
+                    dietDiv.innerHTML = data.diet.map(line => `<div>${line}</div>`).join('');
+                })
+                .catch(err => console.error('Error fetching dashboard metrics:', err));
+        });
+    </script>
+</body>
+</html>
